@@ -1,27 +1,25 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
-
-export interface WelcomeBook {
-  /** Cottage name, used as the tab label. */
-  name: string;
-  /** Canva design id. */
-  canvaId: string;
-}
+import type { WelcomeBook } from "@/data/welcomeBooks";
 
 /**
  * Tabbed Canva viewer for the welcome books. Only the active book's iframe is
- * mounted, so a single (heavy, portrait) Canva embed loads at a time.
+ * mounted, so a single (heavy, portrait) Canva embed loads at a time. When
+ * more than one book is shown, the active book also links to its own shareable
+ * page at /welcomebook/<slug>.
  */
 export default function WelcomeBookViewer({ books }: { books: WelcomeBook[] }) {
   const [active, setActive] = useState(0);
   const book = books[active];
   const embed = `https://www.canva.com/design/${book.canvaId}/view?embed`;
   const view = `https://www.canva.com/design/${book.canvaId}/view?utm_content=${book.canvaId}&utm_campaign=designshare&utm_medium=embeds&utm_source=link`;
+  const multiple = books.length > 1;
 
   return (
     <div className="mt-10">
-      {books.length > 1 && (
+      {multiple && (
         <div
           role="tablist"
           aria-label="Welcome books"
@@ -75,14 +73,24 @@ export default function WelcomeBookViewer({ books }: { books: WelcomeBook[] }) {
         />
       </div>
 
-      <a
-        href={view}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="mt-5 inline-block text-[14px] font-semibold text-clay transition-transform hover:translate-x-0.5"
-      >
-        Open {book.name}&apos;s welcome book in a new tab &rarr;
-      </a>
+      <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-2">
+        <a
+          href={view}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[14px] font-semibold text-clay transition-transform hover:translate-x-0.5"
+        >
+          Open in a new tab &rarr;
+        </a>
+        {multiple && (
+          <Link
+            href={`/welcomebook/${book.slug}`}
+            className="text-[13px] text-muted underline decoration-edge underline-offset-2 transition-colors hover:text-clay"
+          >
+            Direct link to {book.name}&apos;s book
+          </Link>
+        )}
+      </div>
     </div>
   );
 }

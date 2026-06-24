@@ -1,19 +1,11 @@
 import type { Metadata } from "next";
-import WelcomeBookViewer, {
-  type WelcomeBook,
-} from "@/components/WelcomeBookViewer";
+import WelcomeBookViewer from "@/components/WelcomeBookViewer";
+import { welcomeBooks } from "@/data/welcomeBooks";
 
 export const metadata: Metadata = {
   title: "Welcome Book",
   description: "Everything you need to know for your stay at Cottage Creators.",
 };
-
-// Canva designs embedded on the original cottagecreators.ca/welcomebook.
-const books: WelcomeBook[] = [
-  { name: "The Water's Edge", canvaId: "DAE8poJ7Eq0" },
-  { name: "Muskoka Cabana", canvaId: "DAFtr1UUqYU" },
-  { name: "The Nest", canvaId: "DAF1BExCUhQ" },
-];
 
 export default function WelcomeBook() {
   return (
@@ -29,10 +21,11 @@ export default function WelcomeBook() {
         <p className="mt-4 max-w-[58ch] text-[16.5px] leading-relaxed text-muted">
           Everything you need for a smooth, restful stay — directions, the lay
           of the land, house notes, and our favourite things to do on Three
-          Mile Lake. Choose the book for your cottage below.
+          Mile Lake. Pick the book for your cottage below, or open it on its own
+          page to share.
         </p>
 
-        <WelcomeBookViewer books={books} />
+        <WelcomeBookViewer books={welcomeBooks} />
       </div>
     </section>
   );
