@@ -10,7 +10,7 @@ export default function PropertyCard({ property }: { property: Property }) {
     >
       <div className="relative h-64 overflow-hidden">
         <Image
-          src={property.images[0]}
+          src={property.heroImage}
           alt={property.name}
           fill
           className="object-cover group-hover:scale-105 transition-transform duration-500"

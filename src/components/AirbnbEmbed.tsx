@@ -11,7 +11,7 @@ export default function AirbnbEmbed({ property }: { property: Property }) {
     >
       <div className="relative h-48">
         <Image
-          src={property.images[0]}
+          src={property.heroImage}
           alt={property.name}
           fill
           className="object-cover"
