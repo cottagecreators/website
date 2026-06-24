@@ -106,10 +106,10 @@ export default function Footer() {
               </li>
               <li>
                 <a
-                  href={`tel:${siteConfig.phone.replace(/[^0-9]/g, "")}`}
+                  href={`mailto:${siteConfig.email}`}
                   className="transition-colors hover:text-bone"
                 >
-                  {siteConfig.phone}
+                  Email us
                 </a>
               </li>
             </ul>

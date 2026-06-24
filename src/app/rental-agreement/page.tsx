@@ -158,7 +158,7 @@ export default function RentalAgreement() {
             11. Maintenance by Host
           </h2>
           <p>
-            Contact: info@cottagecreators.ca or 647-989-4717. The Host does not
+            Contact: info@cottagecreators.ca. The Host does not
             guarantee the operation of any piece of equipment, machinery, or
             appliance serving the Property, and there shall be no discount to or
             refund of any portion of the Rental Rate for failure.

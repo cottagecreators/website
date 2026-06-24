@@ -169,7 +169,6 @@ export const siteConfig = {
   tagline: "Muskoka luxury escape",
   address: "1093 Sutton Rd, Utterson, ON P0B 1M0",
   email: "info@cottagecreators.ca",
-  phone: "647-989-4717",
   instagram: "https://www.instagram.com/cottagecreators",
   facebook: "https://www.facebook.com/thewatersedgecottage/",
   hospitable: "https://cottagecreators.hospitable.rentals",

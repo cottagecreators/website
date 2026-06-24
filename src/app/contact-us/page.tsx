@@ -102,17 +102,6 @@ export default function ContactUs() {
           </div>
           <div>
             <h2 className="text-lg font-semibold text-stone-900 mb-2">
-              Phone
-            </h2>
-            <a
-              href={`tel:${siteConfig.phone}`}
-              className="text-stone-600 hover:text-stone-900 transition-colors"
-            >
-              {siteConfig.phone}
-            </a>
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold text-stone-900 mb-2">
               Location
             </h2>
             <p className="text-stone-600">{siteConfig.address}</p>
