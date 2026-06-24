@@ -1,19 +1,110 @@
 @import "tailwindcss";
 
+/* ------------------------------------------------------------------ */
+/* Cottage Creators design system                                      */
+/* Palette, type, and motion tokens. Consumed via Tailwind v4 @theme   */
+/* so utilities like bg-clay / text-ink / font-display are generated.  */
+/* ------------------------------------------------------------------ */
+
+@theme {
+  /* Brand palette */
+  --color-pine-deep: #1e2922; /* footers, dark heroes */
+  --color-pine: #2c3a30; /* primary dark / bands */
+  --color-clay: #a8572f; /* PRIMARY action color */
+  --color-clay-dark: #8f4825; /* clay hover */
+  --color-sand: #e0a77e; /* warm accent / eyebrows on dark */
+  --color-cream: #efe8da; /* page background */
+  --color-bone: #fbf8f1; /* cards / surfaces */
+  --color-ink: #2c2a24; /* body text */
+  --color-muted: #6e6856; /* secondary text */
+  --color-edge: #e0d6c0; /* hairline borders */
+
+  /* Type */
+  --font-display: var(--font-cormorant);
+  --font-sans: var(--font-hanken);
+
+  /* Motion */
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 :root {
-  --background: #faf9f7;
-  --foreground: #1c1917;
+  --background: var(--color-cream);
+  --foreground: var(--color-ink);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* Base element defaults live in @layer base so Tailwind utilities
+   (text-bone, text-cream, …) still override them — unlayered rules
+   would otherwise beat layered utilities in the cascade. */
+@layer base {
+  body {
+    background: var(--color-cream);
+    color: var(--color-ink);
+    font-family: var(--font-sans), system-ui, sans-serif;
+    font-size: 16.5px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Headings default to the display serif */
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display), Georgia, serif;
+    color: var(--color-ink);
+    font-weight: 600;
+    line-height: 1.08;
+    letter-spacing: -0.01em;
+  }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* ------------------------------------------------------------------ */
+/* Components                                                          */
+/* ------------------------------------------------------------------ */
+
+@layer components {
+  /* Small uppercase eyebrow label */
+  .eyebrow {
+    font-family: var(--font-sans), sans-serif;
+    font-size: 0.6875rem; /* 11px */
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: var(--color-clay);
+  }
+  .eyebrow-on-dark {
+    color: var(--color-sand);
+  }
+
+  /* Constrained content column */
+  .container-edge {
+    width: 100%;
+    max-width: 1140px;
+    margin-inline: auto;
+    padding-inline: 1.5rem;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Motion — restrained fade / translate-up on scroll                   */
+/* ------------------------------------------------------------------ */
+
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 0.6s var(--ease-out-soft),
+    transform 0.6s var(--ease-out-soft);
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
 }

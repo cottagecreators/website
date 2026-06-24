@@ -27,6 +27,12 @@ export interface Property {
   baths: number;
   /** Hero/banner image (Hospitable CDN url). */
   heroImage: string;
+  /**
+   * Indicative off-season "from" nightly rate in CAD, shown on the booking
+   * card. Sourced from the Hospitable calendar lows — adjust as pricing
+   * changes (it's a marketing "from", not a live quote).
+   */
+  priceFrom: number;
   hospitable: string;
   airbnb: string;
   airbnbId: string;
@@ -75,7 +81,7 @@ export const properties: Property[] = [
       {
         source: "@ontarioairbnbs",
         blurb:
-          "“This magical treehouse on the water is the perfect spring getaway.” 🌸",
+          "“This magical treehouse on the water is the perfect spring getaway.”",
         url: "https://www.tiktok.com/@ontarioairbnbs/video/7495723145224015109",
         emoji: "📱",
         kind: "Watch",
@@ -95,6 +101,7 @@ export const properties: Property[] = [
     baths: 1,
     heroImage:
       "https://assets.hospitable.com/property_images/1879234/z2RtqHvMA6JOJlbzj6eKeuUI2NpZNOUPfPZElbl2.jpg",
+    priceFrom: 695,
     instagramPosts: [
       "https://www.instagram.com/cottagecreators/reel/DFczTHzJmdt/",
       "https://www.instagram.com/cottagecreators/reel/CYbelJep_rs/",
@@ -124,6 +131,7 @@ export const properties: Property[] = [
     baths: 1,
     heroImage:
       "https://assets.hospitable.com/property_images/1879238/A6PkuaxQCvi5RqOa2CFaVNGlXpippmybTXhDSMhM.jpg",
+    priceFrom: 500,
     hospitable:
       "https://cottagecreators.hospitable.rentals/property/muskokacabana",
     airbnb: "https://www.airbnb.com/h/muskokacabana",
@@ -149,6 +157,7 @@ export const properties: Property[] = [
     baths: 1,
     heroImage:
       "https://a0.muscache.com/im/pictures/hosting/Hosting-U3RheVN1cHBseUxpc3Rpbmc6NjE4ODgyNzk3MjgzMTUyNzA2/original/5593bd09-33cd-461c-98ca-388b43aa264f.jpeg",
+    priceFrom: 500,
     hospitable: "https://cottagecreators.hospitable.rentals",
     airbnb: "https://www.airbnb.com/h/muskokanest",
     airbnbId: "618882797283152706",

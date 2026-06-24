@@ -6,7 +6,7 @@ export default function TextUsButton() {
   return (
     <a
       href={`sms:+1${PHONE_NUMBER}&body=Hi! I found you on Airbnb and I'm interested in booking direct.`}
-      className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-green-600 text-white pl-4 pr-5 py-3.5 rounded-full shadow-lg hover:bg-green-700 transition-colors hover:scale-105 active:scale-95"
+      className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-pine-deep text-bone pl-4 pr-5 py-3.5 rounded-full shadow-lg hover:bg-pine transition-colors hover:scale-105 active:scale-95"
       aria-label="Text us"
     >
       <svg
