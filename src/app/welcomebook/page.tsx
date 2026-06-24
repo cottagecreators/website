@@ -11,7 +11,8 @@ export const metadata: Metadata = {
 // Canva designs embedded on the original cottagecreators.ca/welcomebook.
 const books: WelcomeBook[] = [
   { name: "The Water's Edge", canvaId: "DAE8poJ7Eq0" },
-  { name: "The Muskoka Nest", canvaId: "DAF1BExCUhQ" },
+  { name: "Muskoka Cabana", canvaId: "DAFtr1UUqYU" },
+  { name: "The Nest", canvaId: "DAF1BExCUhQ" },
 ];
 
 export default function WelcomeBook() {
