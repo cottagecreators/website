@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import logo from "../../../public/images/logo.png";
 import { siteConfig } from "@/data/properties";
 
 export const metadata: Metadata = {
@@ -35,10 +36,8 @@ export default function MediaKit() {
           <h2 className="text-xl font-semibold text-stone-900 mb-4">Logo</h2>
           <div className="bg-stone-50 rounded-lg p-8 flex justify-center">
             <Image
-              src="/images/logo.png"
+              src={logo}
               alt="Cottage Creators Logo"
-              width={300}
-              height={100}
               className="h-24 w-auto"
             />
           </div>
