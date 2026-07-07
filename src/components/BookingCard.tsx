@@ -1,16 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import AvailabilityPicker from "@/components/AvailabilityPicker";
 import BookDirectButton from "@/components/BookDirectButton";
 import TrustLine from "@/components/TrustLine";
 import type { Property } from "@/data/properties";
 
 /**
  * Booking card used in the property page's sticky right column. Shows the
- * "from" rate, the direct-booking savings, check-in / check-out date fields,
- * the single primary CTA, a trust line, and a small Airbnb fallback link.
- * Dates are appended to the Hospitable URL as a soft hand-off (ignored if the
- * engine doesn't read them).
+ * "from" rate, the direct-booking savings, a live availability calendar (with a
+ * plain date-input fallback on the static export), the single primary CTA, a
+ * trust line, and a small Airbnb fallback link. The selected dates are appended
+ * to the Hospitable URL, which re-validates and takes payment.
  */
 export default function BookingCard({ property }: { property: Property }) {
   const [checkIn, setCheckIn] = useState("");
@@ -35,33 +36,15 @@ export default function BookingCard({ property }: { property: Property }) {
         Save ~15% vs Airbnb
       </p>
 
-      <div className="mt-4 grid grid-cols-2 gap-2">
-        <label className="rounded-[5px] border border-edge px-3 py-2 focus-within:border-clay">
-          <span className="block text-[9px] uppercase tracking-[0.1em] text-muted">
-            Check-in
-          </span>
-          <input
-            type="date"
-            value={checkIn}
-            onChange={(e) => setCheckIn(e.target.value)}
-            className="mt-0.5 w-full bg-transparent text-[13px] text-ink outline-none"
-            aria-label="Check-in date"
-          />
-        </label>
-        <label className="rounded-[5px] border border-edge px-3 py-2 focus-within:border-clay">
-          <span className="block text-[9px] uppercase tracking-[0.1em] text-muted">
-            Check-out
-          </span>
-          <input
-            type="date"
-            value={checkOut}
-            min={checkIn || undefined}
-            onChange={(e) => setCheckOut(e.target.value)}
-            className="mt-0.5 w-full bg-transparent text-[13px] text-ink outline-none"
-            aria-label="Check-out date"
-          />
-        </label>
-      </div>
+      <AvailabilityPicker
+        property={property}
+        checkIn={checkIn}
+        checkOut={checkOut}
+        onSelect={(ci, co) => {
+          setCheckIn(ci);
+          setCheckOut(co);
+        }}
+      />
 
       <BookDirectButton href={href} block className="mt-3" />
 
