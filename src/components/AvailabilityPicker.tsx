@@ -213,28 +213,46 @@ export default function AvailabilityPicker({
           if (!date) return <span key={i} />;
           const info = days.get(date);
           const isPast = date < today;
-          const unavailable = isPast || !info?.available;
+          const available = !!info?.available;
           const isCheckIn = date === checkIn;
           const isCheckOut = date === checkOut;
-          const inRange = !!checkIn && !!checkOut && date > checkIn && date < checkOut;
           const endpoint = isCheckIn || isCheckOut;
+          const inRange = !!checkIn && !!checkOut && date > checkIn && date < checkOut;
+
+          // What we're picking next decides selectability. A booked day is NOT
+          // a valid night to stay, but it IS a valid CHECK-OUT (turnover day:
+          // the next guest checks in that morning). So while choosing a
+          // check-out, allow any date the stay rules accept — validateStay only
+          // checks the nights actually stayed [check-in, check-out), never the
+          // check-out day's own availability.
+          const choosingCheckout = !!checkIn && !checkOut;
+          const selectable = isPast
+            ? false
+            : choosingCheckout
+              ? validateStay(checkIn, date) === "" || isCheckInEligible(date)
+              : isCheckInEligible(date);
+
+          const disabled = !selectable && !endpoint;
+          const struck = !available && !selectable && !endpoint;
 
           return (
             <button
               key={i}
               type="button"
               onClick={() => handleDayClick(date)}
-              disabled={unavailable && !endpoint}
-              aria-label={`${date}${unavailable ? " (unavailable)" : ""}`}
+              disabled={disabled}
+              aria-label={`${date}${!available ? " (booked)" : ""}`}
               className={[
                 "relative aspect-square rounded-[4px] text-[12px] transition-colors",
                 endpoint
                   ? "bg-clay font-semibold text-bone"
                   : inRange
                     ? "bg-clay/15 text-ink"
-                    : unavailable
+                    : struck
                       ? "text-muted/40 line-through"
-                      : "text-ink hover:bg-cream",
+                      : !selectable
+                        ? "text-muted/40"
+                        : "text-ink hover:bg-cream",
               ].join(" ")}
             >
               {Number(date.slice(-2))}
