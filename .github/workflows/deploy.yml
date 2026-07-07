@@ -25,9 +25,9 @@ jobs:
         run: npm ci
 
       - name: Build static export
-        run: npm run build
-        env:
-          DROPLET: "true"
+        # build:droplet sets DROPLET=true and excludes the dynamic
+        # /api/availability routes, which can't be part of `output: export`.
+        run: npm run build:droplet
 
       - name: Deploy static site to droplet
         uses: easingthemes/ssh-deploy@v5.1.2

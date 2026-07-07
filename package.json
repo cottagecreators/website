@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "build:pages": "node scripts/build-pages.mjs",
+    "build:pages": "node scripts/build-static.mjs pages",
+    "build:droplet": "node scripts/build-static.mjs droplet",
     "start": "next start",
     "lint": "eslint"
   },
