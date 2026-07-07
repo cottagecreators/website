@@ -36,6 +36,11 @@ export interface Property {
   hospitable: string;
   airbnb: string;
   airbnbId: string;
+  /**
+   * Hospitable property UUID, used server-side to fetch the live availability
+   * calendar (see the /api/availability route). Never exposed to the client.
+   */
+  hospitableUuid: string;
 }
 
 export const properties: Property[] = [
@@ -72,13 +77,6 @@ export const properties: Property[] = [
         kind: "Read",
       },
       {
-        source: "Best Airbnb Canada",
-        blurb: "Hand-picked as one of Canada's standout treehouse stays.",
-        url: "https://www.bestairbnb.ca/properties/waters-edge-treehouse",
-        emoji: "🍁",
-        kind: "Read",
-      },
-      {
         source: "@ontarioairbnbs",
         blurb:
           "“This magical treehouse on the water is the perfect spring getaway.”",
@@ -110,6 +108,7 @@ export const properties: Property[] = [
     hospitable: "https://cottagecreators.hospitable.rentals",
     airbnb: "https://www.airbnb.com/h/thewatersedgemuskoka",
     airbnbId: "50249446",
+    hospitableUuid: "6dd3119a-cb92-4617-a378-d6e5ce4a5bec",
   },
   {
     slug: "muskokacabana",
@@ -136,6 +135,7 @@ export const properties: Property[] = [
       "https://cottagecreators.hospitable.rentals/property/muskokacabana",
     airbnb: "https://www.airbnb.com/h/muskokacabana",
     airbnbId: "618880326561734158",
+    hospitableUuid: "c836b29e-193f-46ac-86f4-b0ecde341b91",
   },
   {
     slug: "thenest",
@@ -161,6 +161,7 @@ export const properties: Property[] = [
     hospitable: "https://cottagecreators.hospitable.rentals",
     airbnb: "https://www.airbnb.com/h/muskokanest",
     airbnbId: "618882797283152706",
+    hospitableUuid: "ffc6ea79-922a-45c4-9d67-4207d517fdc7",
   },
 ];
 

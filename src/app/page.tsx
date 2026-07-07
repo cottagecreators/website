@@ -4,6 +4,7 @@ import BookDirectButton from "@/components/BookDirectButton";
 import TrustLine from "@/components/TrustLine";
 import Reveal from "@/components/Reveal";
 import PropertyCard from "@/components/PropertyCard";
+import AvailabilityTimeline from "@/components/AvailabilityTimeline";
 import { properties, siteConfig } from "@/data/properties";
 import { galleries } from "@/data/galleries";
 
@@ -179,6 +180,9 @@ export default function Home() {
           </Reveal>
         </div>
       </section>
+
+      {/* ===== Availability timeline (live; DigitalOcean only) ===== */}
+      <AvailabilityTimeline />
 
       {/* ===== Book-direct value band ===== */}
       <section className="bg-pine text-bone">

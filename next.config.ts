@@ -40,6 +40,8 @@ const nextConfig: NextConfig = isStaticExport
       },
     }
   : {
+      // Self-contained server bundle for the Docker/DigitalOcean deploy.
+      output: "standalone",
       images: {
         remotePatterns,
       },

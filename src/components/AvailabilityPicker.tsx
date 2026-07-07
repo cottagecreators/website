@@ -1,0 +1,276 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import type { Property } from "@/data/properties";
+import {
+  type AvailabilityResponse,
+  type CalendarDay,
+  addDays,
+  eachDay,
+  isoDate,
+  monthGrid,
+  monthLabel,
+  nightsBetween,
+  todayISO,
+} from "@/lib/calendar";
+
+type Status = "loading" | "live" | "fallback";
+
+const WEEKDAYS = ["S", "M", "T", "W", "T", "F", "S"];
+const HORIZON_DAYS = 180;
+
+/**
+ * Live availability picker for a single property. On the DigitalOcean server it
+ * fetches the real Hospitable calendar and renders a month grid with booked
+ * nights disabled, min-stay enforced, and a live price total. On the static
+ * GitHub Pages export the /api route doesn't exist, the fetch fails, and it
+ * degrades to two plain date inputs (the site's original behavior).
+ */
+export default function AvailabilityPicker({
+  property,
+  checkIn,
+  checkOut,
+  onSelect,
+}: {
+  property: Property;
+  checkIn: string;
+  checkOut: string;
+  onSelect: (checkIn: string, checkOut: string) => void;
+}) {
+  const [status, setStatus] = useState<Status>("loading");
+  const [days, setDays] = useState<Map<string, CalendarDay>>(new Map());
+  const [viewMonth, setViewMonth] = useState<string>(todayISO().slice(0, 7));
+  const [hint, setHint] = useState<string>("");
+
+  const today = todayISO();
+  const horizonEnd = addDays(today, HORIZON_DAYS);
+
+  useEffect(() => {
+    let cancelled = false;
+    const params = new URLSearchParams({ start: today, end: horizonEnd });
+    fetch(`/api/availability/${property.slug}?${params}`)
+      .then((res) => {
+        if (!res.ok) throw new Error(String(res.status));
+        return res.json() as Promise<AvailabilityResponse>;
+      })
+      .then((data) => {
+        if (cancelled) return;
+        setDays(new Map(data.days.map((d) => [d.date, d])));
+        setStatus("live");
+      })
+      .catch(() => {
+        if (!cancelled) setStatus("fallback");
+      });
+    return () => {
+      cancelled = true;
+    };
+    // Fetch once on mount for this property.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [property.slug]);
+
+  const [year, month1] = viewMonth.split("-").map(Number);
+  const grid = useMemo(() => monthGrid(year, month1), [year, month1]);
+
+  const canGoPrev = viewMonth > today.slice(0, 7);
+  const canGoNext = viewMonth < horizonEnd.slice(0, 7);
+
+  function shiftMonth(delta: number) {
+    const d = new Date(Date.UTC(year, month1 - 1 + delta, 1));
+    setViewMonth(isoDate(d).slice(0, 7));
+  }
+
+  /** A date is selectable as a check-in if it's today-or-later and available. */
+  function isCheckInEligible(date: string): boolean {
+    const info = days.get(date);
+    return date >= today && !!info?.available && !info.closedForCheckin;
+  }
+
+  /** Validate a full stay; returns an error string or "" if the range is bookable. */
+  function validateStay(start: string, end: string): string {
+    if (end <= start) return "Check-out must be after check-in.";
+    const startInfo = days.get(start);
+    const endInfo = days.get(end);
+    if (!startInfo || startInfo.closedForCheckin) return "Check-in isn't available on that day.";
+    if (endInfo?.closedForCheckout) return "Check-out isn't available on that day.";
+    // Every night in [start, end) must be available.
+    for (const night of eachDay(start, addDays(end, -1))) {
+      if (!days.get(night)?.available) return "Those dates include unavailable nights.";
+    }
+    const nights = nightsBetween(start, end);
+    if (nights < startInfo.minStay) {
+      return `Minimum stay is ${startInfo.minStay} night${startInfo.minStay > 1 ? "s" : ""}.`;
+    }
+    return "";
+  }
+
+  function handleDayClick(date: string) {
+    setHint("");
+    // Starting a fresh selection (nothing chosen, or both already chosen).
+    if (!checkIn || (checkIn && checkOut)) {
+      if (!isCheckInEligible(date)) {
+        setHint("That date isn't available for check-in.");
+        return;
+      }
+      onSelect(date, "");
+      return;
+    }
+    // Choosing the check-out (checkIn set, checkOut not).
+    if (date <= checkIn) {
+      // Treat an earlier click as restarting from that date.
+      if (isCheckInEligible(date)) onSelect(date, "");
+      else setHint("That date isn't available for check-in.");
+      return;
+    }
+    const error = validateStay(checkIn, date);
+    if (error) {
+      setHint(error);
+      return;
+    }
+    onSelect(checkIn, date);
+  }
+
+  const nights = checkIn && checkOut ? nightsBetween(checkIn, checkOut) : 0;
+  const stayTotal = useMemo(() => {
+    if (!checkIn || !checkOut) return null;
+    let sum = 0;
+    for (const night of eachDay(checkIn, addDays(checkOut, -1))) {
+      const p = days.get(night)?.price;
+      if (p == null) return null;
+      sum += p;
+    }
+    return sum;
+  }, [checkIn, checkOut, days]);
+
+  // ---- Fallback: plain native date inputs (static export / API unavailable) ----
+  if (status === "fallback") {
+    return (
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        <label className="rounded-[5px] border border-edge px-3 py-2 focus-within:border-clay">
+          <span className="block text-[9px] uppercase tracking-[0.1em] text-muted">Check-in</span>
+          <input
+            type="date"
+            value={checkIn}
+            min={today}
+            onChange={(e) => onSelect(e.target.value, checkOut)}
+            className="mt-0.5 w-full bg-transparent text-[13px] text-ink outline-none"
+            aria-label="Check-in date"
+          />
+        </label>
+        <label className="rounded-[5px] border border-edge px-3 py-2 focus-within:border-clay">
+          <span className="block text-[9px] uppercase tracking-[0.1em] text-muted">Check-out</span>
+          <input
+            type="date"
+            value={checkOut}
+            min={checkIn || today}
+            onChange={(e) => onSelect(checkIn, e.target.value)}
+            className="mt-0.5 w-full bg-transparent text-[13px] text-ink outline-none"
+            aria-label="Check-out date"
+          />
+        </label>
+      </div>
+    );
+  }
+
+  // ---- Loading skeleton ----
+  if (status === "loading") {
+    return (
+      <div className="mt-4 h-[280px] animate-pulse rounded-[6px] border border-edge bg-cream/50" aria-hidden />
+    );
+  }
+
+  // ---- Live calendar ----
+  return (
+    <div className="mt-4 rounded-[6px] border border-edge p-3">
+      <div className="flex items-center justify-between px-1">
+        <button
+          type="button"
+          onClick={() => shiftMonth(-1)}
+          disabled={!canGoPrev}
+          className="rounded p-1 text-muted transition-colors hover:text-clay disabled:opacity-30"
+          aria-label="Previous month"
+        >
+          ‹
+        </button>
+        <span className="font-display text-[15px] text-pine">{monthLabel(`${viewMonth}-01`)}</span>
+        <button
+          type="button"
+          onClick={() => shiftMonth(1)}
+          disabled={!canGoNext}
+          className="rounded p-1 text-muted transition-colors hover:text-clay disabled:opacity-30"
+          aria-label="Next month"
+        >
+          ›
+        </button>
+      </div>
+
+      <div className="mt-2 grid grid-cols-7 gap-0.5 text-center">
+        {WEEKDAYS.map((d, i) => (
+          <span key={i} className="py-1 text-[10px] font-medium uppercase text-muted">
+            {d}
+          </span>
+        ))}
+        {grid.map((date, i) => {
+          if (!date) return <span key={i} />;
+          const info = days.get(date);
+          const isPast = date < today;
+          const unavailable = isPast || !info?.available;
+          const isCheckIn = date === checkIn;
+          const isCheckOut = date === checkOut;
+          const inRange = !!checkIn && !!checkOut && date > checkIn && date < checkOut;
+          const endpoint = isCheckIn || isCheckOut;
+
+          return (
+            <button
+              key={i}
+              type="button"
+              onClick={() => handleDayClick(date)}
+              disabled={unavailable && !endpoint}
+              aria-label={`${date}${unavailable ? " (unavailable)" : ""}`}
+              className={[
+                "relative aspect-square rounded-[4px] text-[12px] transition-colors",
+                endpoint
+                  ? "bg-clay font-semibold text-bone"
+                  : inRange
+                    ? "bg-clay/15 text-ink"
+                    : unavailable
+                      ? "text-muted/40 line-through"
+                      : "text-ink hover:bg-cream",
+              ].join(" ")}
+            >
+              {Number(date.slice(-2))}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="mt-2 flex min-h-[18px] items-center justify-between px-1 text-[11px]">
+        {hint ? (
+          <span className="text-clay">{hint}</span>
+        ) : checkIn && checkOut ? (
+          <span className="text-muted">
+            {nights} night{nights > 1 ? "s" : ""}
+            {stayTotal != null && (
+              <span className="ml-1 font-semibold text-pine">
+                · {stayTotal.toLocaleString("en-CA", { style: "currency", currency: "CAD", maximumFractionDigits: 0 })}
+              </span>
+            )}
+          </span>
+        ) : (
+          <span className="text-muted">{checkIn ? "Select your check-out date" : "Select your check-in date"}</span>
+        )}
+        {(checkIn || checkOut) && (
+          <button
+            type="button"
+            onClick={() => {
+              setHint("");
+              onSelect("", "");
+            }}
+            className="text-muted underline decoration-edge underline-offset-2 hover:text-clay"
+          >
+            Clear
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}

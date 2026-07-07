@@ -1,0 +1,12 @@
+node_modules
+.next
+out
+.git
+.env
+.env.*
+.api-export-stash
+design_handoff_cottage_creators
+npm-debug.log*
+Dockerfile
+.dockerignore
+README.md
