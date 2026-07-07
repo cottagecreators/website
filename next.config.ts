@@ -25,6 +25,8 @@ const nextConfig: NextConfig = isGithubPages
       },
     }
   : {
+      // Self-contained server bundle for the Docker/DigitalOcean deploy.
+      output: "standalone",
       images: {
         remotePatterns,
       },
