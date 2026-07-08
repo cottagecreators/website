@@ -5,39 +5,59 @@ on:
     branches: [main]
   workflow_dispatch:
 
-# The site is a static export (see next.config.ts, DROPLET=true). We build the
-# `out/` folder here and rsync it to the droplet, where Caddy serves it as a
-# static file_server alongside the guest-concierge service. No Node runtime,
-# pm2, or `next start` runs on the droplet — keeps the 512 MB box comfortable.
+# Deploys the DYNAMIC Next.js site: rsync the repo to the droplet and rebuild
+# the `website` container that Caddy reverse-proxies cottagecreators.ca to.
+# (The previous static-export -> Caddy file_server flow is retired; the apex
+# now runs the Node server so live availability + quotes work.)
+concurrency:
+  group: droplet-deploy
+  cancel-in-progress: false
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build static export
-        # build:droplet sets DROPLET=true and excludes the dynamic
-        # /api/availability routes, which can't be part of `output: export`.
-        run: npm run build:droplet
-
-      - name: Deploy static site to droplet
-        uses: easingthemes/ssh-deploy@v5.1.2
-        with:
+      - name: Configure SSH key
+        env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+
+      - name: Rsync source to droplet
+        env:
           REMOTE_HOST: ${{ secrets.REMOTE_HOST }}
           REMOTE_USER: ${{ secrets.REMOTE_USER }}
           REMOTE_PORT: ${{ secrets.REMOTE_PORT || '22' }}
-          # Trailing slash on SOURCE copies the contents of out/ into TARGET.
-          # --delete prunes files that no longer exist in the new build.
-          SOURCE: "out/"
-          TARGET: /opt/cottagecreators/site
-          ARGS: "-rltgoDzvO --delete"
+        run: |
+          rsync -az --delete \
+            -e "ssh -i ~/.ssh/id_deploy -p $REMOTE_PORT -o StrictHostKeyChecking=accept-new" \
+            --exclude node_modules --exclude .next --exclude .git --exclude out \
+            --exclude .env --exclude '.env.*' --exclude .api-export-stash \
+            --exclude design_handoff_cottage_creators \
+            ./ "$REMOTE_USER@$REMOTE_HOST:/opt/cottagecreators/app/"
+
+      - name: Rebuild and restart the website container
+        env:
+          REMOTE_HOST: ${{ secrets.REMOTE_HOST }}
+          REMOTE_USER: ${{ secrets.REMOTE_USER }}
+          REMOTE_PORT: ${{ secrets.REMOTE_PORT || '22' }}
+        run: |
+          ssh -i ~/.ssh/id_deploy -p "$REMOTE_PORT" -o StrictHostKeyChecking=accept-new \
+            "$REMOTE_USER@$REMOTE_HOST" bash -s <<'EOSSH'
+          set -e
+          cd /opt/concierge
+          docker compose build website
+          docker compose --profile web up -d website
+          s=none
+          for i in $(seq 1 40); do
+            s=$(docker inspect --format '{{.State.Health.Status}}' concierge-website-1 2>/dev/null || echo none)
+            [ "$s" = healthy ] && break
+            sleep 3
+          done
+          echo "website health: $s"
+          [ "$s" = healthy ]
+          EOSSH
