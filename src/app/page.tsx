@@ -5,6 +5,7 @@ import TrustLine from "@/components/TrustLine";
 import Reveal from "@/components/Reveal";
 import PropertyCard from "@/components/PropertyCard";
 import AvailabilityTimeline from "@/components/AvailabilityTimeline";
+import AirbnbStrip from "@/components/AirbnbStrip";
 import { properties, siteConfig } from "@/data/properties";
 import { galleries } from "@/data/galleries";
 
@@ -183,6 +184,9 @@ export default function Home() {
 
       {/* ===== Availability timeline (live; DigitalOcean only) ===== */}
       <AvailabilityTimeline />
+
+      {/* ===== Still prefer Airbnb? ===== */}
+      <AirbnbStrip />
 
       {/* ===== Book-direct value band ===== */}
       <section className="bg-pine text-bone">
