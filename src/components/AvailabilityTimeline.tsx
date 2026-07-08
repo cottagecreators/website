@@ -20,6 +20,13 @@ const CELL = 48; // px per day column (wide enough for a nightly price)
 const NAME_COL = 168; // px for the sticky property-name column
 const WEEKDAY = ["S", "M", "T", "W", "T", "F", "S"];
 
+// Solid fills for the two states; BOOKED is clay/60 flattened over bone so it
+// can be used inside the diagonal gradients on turnover (check-in/out) days.
+const AVAIL = "var(--color-bone)";
+const BOOKED = "color-mix(in srgb, var(--color-clay) 60%, var(--color-bone))";
+const CHECKOUT_BG = `linear-gradient(to top right, ${BOOKED} 0 49%, ${AVAIL} 51%)`;
+const CHECKIN_BG = `linear-gradient(to top right, ${AVAIL} 0 49%, ${BOOKED} 51%)`;
+
 /** Property slug -> link target on the site. */
 function propertyHref(slug: string): string {
   return `/${slug}`;
@@ -92,6 +99,13 @@ export default function AvailabilityTimeline() {
               <span className="inline-block h-3 w-3 rounded-[3px] bg-clay/60" />
               Booked
             </span>
+            <span className="flex items-center gap-2">
+              <span
+                className="inline-block h-3 w-3 rounded-[3px] border border-edge"
+                style={{ background: CHECKOUT_BG }}
+              />
+              Check-in / out
+            </span>
           </div>
         </div>
 
@@ -140,22 +154,54 @@ export default function AvailabilityTimeline() {
                       </Link>
                       {days.map((date) => {
                         const info = dayMap?.get(date);
-                        const booked = !info?.available;
+                        const available = !!info?.available;
                         const price = info?.price;
+                        const minStay = info?.minStay ?? 0;
+
+                        // Turnover detection: compare with the previous night. A
+                        // stay ending today (booked -> available) is a check-out;
+                        // a stay starting today (available -> booked) is a
+                        // check-in. Those days get the diagonal split.
+                        const prev = dayMap?.get(addDays(date, -1));
+                        const prevAvailable = prev ? !!prev.available : available;
+                        const isCheckout = !!prev && available && !prevAvailable;
+                        const isCheckin = !!prev && !available && prevAvailable;
+
+                        const style = isCheckout
+                          ? { background: CHECKOUT_BG }
+                          : isCheckin
+                            ? { background: CHECKIN_BG }
+                            : undefined;
+                        const bgClass = style ? "" : available ? "bg-bone" : "bg-clay/60";
+
+                        const title = `${p.name} · ${date} · ${available ? "Available" : "Booked"}${
+                          available && price != null ? ` · $${Math.round(price).toLocaleString("en-CA")}/night` : ""
+                        }${available && minStay > 1 ? ` · ${minStay}-night min` : ""}`;
+
                         return (
-                          <div
+                          <Link
                             key={date}
-                            title={`${p.name} · ${date} · ${booked ? "Booked" : "Available"}${
-                              price != null ? ` · $${Math.round(price).toLocaleString("en-CA")}/night` : ""
-                            }`}
+                            href={available ? `/${p.slug}?checkin=${date}` : `/${p.slug}`}
+                            title={title}
+                            style={style}
                             className={[
-                              "flex h-11 items-center justify-center border-l border-edge/50 text-[10px] tabular-nums",
+                              "flex h-14 flex-col items-center justify-center border-l border-edge/50 leading-none transition-[filter]",
                               date === today ? "border-l-2 border-l-clay" : "",
-                              booked ? "bg-clay/60 text-bone/70" : "bg-bone text-pine/80",
+                              bgClass,
+                              available ? "hover:brightness-[0.97]" : "hover:brightness-105",
                             ].join(" ")}
                           >
-                            {price != null ? `$${Math.round(price).toLocaleString("en-CA")}` : ""}
-                          </div>
+                            {available && price != null && (
+                              <span className="text-[10px] font-medium tabular-nums text-pine/85">
+                                ${Math.round(price).toLocaleString("en-CA")}
+                              </span>
+                            )}
+                            {available && minStay > 1 && (
+                              <span className="mt-0.5 text-[8px] uppercase tracking-wide text-muted">
+                                {minStay} nt min
+                              </span>
+                            )}
+                          </Link>
                         );
                       })}
                     </div>
@@ -167,7 +213,8 @@ export default function AvailabilityTimeline() {
         </div>
 
         <p className="mt-4 text-[13px] text-muted">
-          Live from our booking calendar. Pick a cottage to choose your dates and book direct.
+          Live from our booking calendar — nightly rates and minimum stays shown
+          for open dates. Click any open date to start booking that cottage.
         </p>
       </div>
     </section>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import AvailabilityPicker from "@/components/AvailabilityPicker";
 import BookDirectButton from "@/components/BookDirectButton";
 import TrustLine from "@/components/TrustLine";
@@ -21,6 +21,18 @@ export default function BookingCard({ property }: { property: Property }) {
   const [checkIn, setCheckIn] = useState("");
   const [checkOut, setCheckOut] = useState("");
   const [quote, setQuote] = useState<Quote | null>(null);
+
+  // Prefill the check-in from a ?checkin=YYYY-MM-DD query param, so clicking a
+  // date on the homepage availability timeline lands here with it selected.
+  // Read from the URL on mount (avoids useSearchParams' Suspense requirement and
+  // works on the static export too).
+  useEffect(() => {
+    const c = new URLSearchParams(window.location.search).get("checkin");
+    // One-time read of the URL after mount (external source) — intentionally
+    // sets state here rather than during render to avoid an SSR mismatch.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (c && /^\d{4}-\d{2}-\d{2}$/.test(c)) setCheckIn(c);
+  }, []);
 
   const params = new URLSearchParams();
   if (checkIn) params.set("startDate", checkIn);

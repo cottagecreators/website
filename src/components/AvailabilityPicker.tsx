@@ -77,6 +77,12 @@ export default function AvailabilityPicker({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [property.slug]);
 
+  // Follow the selected check-in to its month (e.g. when it's prefilled from a
+  // timeline click). Selecting within the current view is a no-op.
+  useEffect(() => {
+    if (checkIn) setViewMonth(checkIn.slice(0, 7));
+  }, [checkIn]);
+
   const [year, month1] = viewMonth.split("-").map(Number);
   const grid = useMemo(() => monthGrid(year, month1), [year, month1]);
 
