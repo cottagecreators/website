@@ -16,7 +16,7 @@ import {
 type Status = "loading" | "live" | "hidden";
 
 const HORIZON_DAYS = 90;
-const CELL = 34; // px per day column
+const CELL = 48; // px per day column (wide enough for a nightly price)
 const NAME_COL = 168; // px for the sticky property-name column
 const WEEKDAY = ["S", "M", "T", "W", "T", "F", "S"];
 
@@ -141,16 +141,21 @@ export default function AvailabilityTimeline() {
                       {days.map((date) => {
                         const info = dayMap?.get(date);
                         const booked = !info?.available;
+                        const price = info?.price;
                         return (
                           <div
                             key={date}
-                            title={`${p.name} · ${date} · ${booked ? "Booked" : "Available"}`}
+                            title={`${p.name} · ${date} · ${booked ? "Booked" : "Available"}${
+                              price != null ? ` · $${Math.round(price).toLocaleString("en-CA")}/night` : ""
+                            }`}
                             className={[
-                              "h-11 border-l border-edge/50",
+                              "flex h-11 items-center justify-center border-l border-edge/50 text-[10px] tabular-nums",
                               date === today ? "border-l-2 border-l-clay" : "",
-                              booked ? "bg-clay/60" : "bg-bone",
+                              booked ? "bg-clay/60 text-bone/70" : "bg-bone text-pine/80",
                             ].join(" ")}
-                          />
+                          >
+                            {price != null ? `$${Math.round(price).toLocaleString("en-CA")}` : ""}
+                          </div>
                         );
                       })}
                     </div>
