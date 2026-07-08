@@ -33,8 +33,16 @@ function Check() {
   );
 }
 
+// Flat, shareable welcome-book URL per cottage.
+const welcomeBookHref: Record<string, string> = {
+  thewatersedge: "/welcomebook-thewatersedge",
+  muskokacabana: "/welcomebook-cabana",
+  thenest: "/welcomebook-nest",
+};
+
 export default function PropertyPage({ property }: { property: Property }) {
   const photos = galleries[property.slug] ?? [];
+  const welcomeBook = welcomeBookHref[property.slug];
 
   return (
     <>
@@ -62,6 +70,14 @@ export default function PropertyPage({ property }: { property: Property }) {
                 <Stat value={property.beds} label={property.beds === 1 ? "bed" : "beds"} />
                 <Stat value={property.baths} label={property.baths === 1 ? "bath" : "baths"} />
               </div>
+              {welcomeBook && (
+                <Link
+                  href={welcomeBook}
+                  className="mt-4 inline-flex items-center gap-1.5 text-[14px] font-semibold text-clay transition-transform hover:translate-x-0.5"
+                >
+                  Read the {property.name} Welcome Book &rarr;
+                </Link>
+              )}
             </Reveal>
 
             <Reveal>

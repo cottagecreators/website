@@ -2,6 +2,7 @@ import Link from "next/link";
 import { siteConfig } from "@/data/properties";
 
 const propertyLinks = [
+  { href: "/booknow", label: "Book Now" },
   { href: "/thewatersedge", label: "The Water's Edge" },
   { href: "/muskokacabana", label: "Muskoka Cabana" },
   { href: "/thenest", label: "The Nest" },

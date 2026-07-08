@@ -9,13 +9,14 @@ const navLinks = [
   { href: "/thewatersedge", label: "The Water's Edge" },
   { href: "/muskokacabana", label: "Muskoka Cabana" },
   { href: "/thenest", label: "The Nest" },
+  { href: "/rental-agreement", label: "Rental Agreement" },
   { href: "/contact-us", label: "Contact" },
 ];
 
 // Secondary links surfaced in the full-screen mobile menu only.
 const moreLinks = [
+  { href: "/booknow", label: "Book Now" },
   { href: "/welcomebook", label: "Welcome Book" },
-  { href: "/rental-agreement", label: "Rental Agreement" },
   { href: "/media-kit", label: "Media Kit" },
   { href: "/subscribe", label: "Subscribe" },
 ];
@@ -81,7 +82,7 @@ export default function Header() {
             </Link>
 
             {/* Desktop nav */}
-            <nav className="hidden items-center gap-8 lg:flex">
+            <nav className="hidden items-center gap-6 lg:flex">
               {navLinks.map((link) => (
                 <Link
                   key={link.href}
