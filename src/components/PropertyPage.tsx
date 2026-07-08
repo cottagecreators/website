@@ -75,7 +75,8 @@ export default function PropertyPage({ property }: { property: Property }) {
                   href={welcomeBook}
                   className="mt-4 inline-flex items-center gap-1.5 text-[14px] font-semibold text-clay transition-transform hover:translate-x-0.5"
                 >
-                  Read the {property.name} Welcome Book &rarr;
+                  <span>Read the {property.name} Welcome Book</span>
+                  <span aria-hidden="true">&rarr;</span>
                 </Link>
               )}
             </Reveal>
