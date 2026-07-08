@@ -37,6 +37,7 @@ const exploreLinks = [
   { href: "/welcomebook", label: "Welcome Book" },
   { href: "/rental-agreement", label: "Rental Agreement" },
   { href: "/media-kit", label: "Media Kit" },
+  { href: "/subscribe", label: "Subscribe" },
   { href: "/contact-us", label: "Contact" },
 ];
 
