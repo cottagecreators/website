@@ -8,11 +8,13 @@ import {
   type Quote,
   addDays,
   eachDay,
+  isCheckInEligible as canCheckIn,
   isoDate,
   monthGrid,
   monthLabel,
   nightsBetween,
   todayISO,
+  validateStay as validateStayFn,
 } from "@/lib/calendar";
 
 type Status = "loading" | "live" | "fallback";
@@ -94,29 +96,8 @@ export default function AvailabilityPicker({
     setViewMonth(isoDate(d).slice(0, 7));
   }
 
-  /** A date is selectable as a check-in if it's today-or-later and available. */
-  function isCheckInEligible(date: string): boolean {
-    const info = days.get(date);
-    return date >= today && !!info?.available && !info.closedForCheckin;
-  }
-
-  /** Validate a full stay; returns an error string or "" if the range is bookable. */
-  function validateStay(start: string, end: string): string {
-    if (end <= start) return "Check-out must be after check-in.";
-    const startInfo = days.get(start);
-    const endInfo = days.get(end);
-    if (!startInfo || startInfo.closedForCheckin) return "Check-in isn't available on that day.";
-    if (endInfo?.closedForCheckout) return "Check-out isn't available on that day.";
-    // Every night in [start, end) must be available.
-    for (const night of eachDay(start, addDays(end, -1))) {
-      if (!days.get(night)?.available) return "Those dates include unavailable nights.";
-    }
-    const nights = nightsBetween(start, end);
-    if (nights < startInfo.minStay) {
-      return `Minimum stay is ${startInfo.minStay} night${startInfo.minStay > 1 ? "s" : ""}.`;
-    }
-    return "";
-  }
+  const isCheckInEligible = (date: string) => canCheckIn(days, date, today);
+  const validateStay = (start: string, end: string) => validateStayFn(days, start, end);
 
   function handleDayClick(date: string) {
     setHint("");

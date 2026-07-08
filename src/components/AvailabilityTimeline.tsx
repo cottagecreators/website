@@ -8,12 +8,17 @@ import {
   type TimelineResponse,
   addDays,
   eachDay,
+  isCheckInEligible,
+  nightsBetween,
   parseISO,
+  shortDate,
   shortMonth,
   todayISO,
+  validateStay,
 } from "@/lib/calendar";
 
 type Status = "loading" | "live" | "hidden";
+type Selection = { slug: string; checkIn: string; checkOut: string };
 
 const HORIZON_DAYS = 90;
 const CELL = 48; // px per day column (wide enough for a nightly price)
@@ -27,21 +32,19 @@ const BOOKED = "color-mix(in srgb, var(--color-clay) 60%, var(--color-bone))";
 const CHECKOUT_BG = `linear-gradient(to top right, ${BOOKED} 0 49%, ${AVAIL} 51%)`;
 const CHECKIN_BG = `linear-gradient(to top right, ${AVAIL} 0 49%, ${BOOKED} 51%)`;
 
-/** Property slug -> link target on the site. */
-function propertyHref(slug: string): string {
-  return `/${slug}`;
-}
-
 /**
  * Horizontal, all-properties availability strip for the homepage — one row per
- * cottage, one column per day, booked nights shaded. No guest or pricing detail,
- * just a glanceable "what's open" view. Fetches the live /api/availability
- * endpoint (DigitalOcean only); on the static export the fetch fails and the
- * whole section removes itself.
+ * cottage, one column per day. Nightly rates + minimum stays show on open days;
+ * turnover (check-in/out) days get a diagonal split. Guests can pick a check-in
+ * then a check-out on a single cottage's row and a "Book Now" link appears.
+ * Fetches the live /api/availability endpoint (dynamic server only); on the
+ * static export the fetch fails and the whole section removes itself.
  */
 export default function AvailabilityTimeline() {
   const [status, setStatus] = useState<Status>("loading");
   const [rows, setRows] = useState<Map<string, Map<string, CalendarDay>>>(new Map());
+  const [sel, setSel] = useState<Selection | null>(null);
+  const [hint, setHint] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const today = todayISO();
@@ -74,8 +77,40 @@ export default function AvailabilityTimeline() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  function handleClick(slug: string, date: string) {
+    const dayMap = rows.get(slug);
+    if (!dayMap) return;
+    setHint("");
+    // Start fresh when nothing's picked, a different cottage is clicked, or a
+    // full range already exists.
+    if (!sel || sel.slug !== slug || (sel.checkIn && sel.checkOut)) {
+      if (!isCheckInEligible(dayMap, date, today)) {
+        setHint("That date isn't available for check-in.");
+        return;
+      }
+      setSel({ slug, checkIn: date, checkOut: "" });
+      return;
+    }
+    // Choosing the check-out on the same cottage.
+    if (date <= sel.checkIn) {
+      if (isCheckInEligible(dayMap, date, today)) setSel({ slug, checkIn: date, checkOut: "" });
+      else setHint("That date isn't available for check-in.");
+      return;
+    }
+    const error = validateStay(dayMap, sel.checkIn, date);
+    if (error) {
+      setHint(error);
+      return;
+    }
+    setSel({ slug, checkIn: sel.checkIn, checkOut: date });
+  }
+
   // Static export / API down: render nothing.
   if (status === "hidden") return null;
+
+  const selName = sel ? properties.find((p) => p.slug === sel.slug)?.name : undefined;
+  const nights = sel?.checkIn && sel.checkOut ? nightsBetween(sel.checkIn, sel.checkOut) : 0;
+  const complete = !!sel?.checkIn && !!sel?.checkOut;
 
   return (
     <section className="bg-bone py-20 md:py-28">
@@ -140,6 +175,7 @@ export default function AvailabilityTimeline() {
                 {/* One row per property */}
                 {properties.map((p, rowIdx) => {
                   const dayMap = rows.get(p.slug);
+                  const selectedHere = sel?.slug === p.slug;
                   return (
                     <div
                       key={p.slug}
@@ -147,7 +183,7 @@ export default function AvailabilityTimeline() {
                       style={{ gridTemplateColumns: `${NAME_COL}px repeat(${days.length}, ${CELL}px)` }}
                     >
                       <Link
-                        href={propertyHref(p.slug)}
+                        href={`/${p.slug}`}
                         className="sticky left-0 z-10 flex items-center border-r border-edge bg-bone px-4 text-[13px] font-medium text-pine transition-colors hover:text-clay"
                       >
                         {p.name}
@@ -158,50 +194,70 @@ export default function AvailabilityTimeline() {
                         const price = info?.price;
                         const minStay = info?.minStay ?? 0;
 
-                        // Turnover detection: compare with the previous night. A
-                        // stay ending today (booked -> available) is a check-out;
-                        // a stay starting today (available -> booked) is a
-                        // check-in. Those days get the diagonal split.
                         const prev = dayMap?.get(addDays(date, -1));
                         const prevAvailable = prev ? !!prev.available : available;
                         const isCheckout = !!prev && available && !prevAvailable;
                         const isCheckin = !!prev && !available && prevAvailable;
 
-                        const style = isCheckout
-                          ? { background: CHECKOUT_BG }
-                          : isCheckin
-                            ? { background: CHECKIN_BG }
-                            : undefined;
-                        const bgClass = style ? "" : available ? "bg-bone" : "bg-clay/60";
+                        const isStart = selectedHere && date === sel!.checkIn;
+                        const isEnd = selectedHere && date === sel!.checkOut;
+                        const endpoint = isStart || isEnd;
+                        const inRange =
+                          selectedHere &&
+                          !!sel!.checkIn &&
+                          !!sel!.checkOut &&
+                          date > sel!.checkIn &&
+                          date < sel!.checkOut;
+
+                        let style: React.CSSProperties | undefined;
+                        let bgClass: string;
+                        if (endpoint) bgClass = "bg-clay";
+                        else if (inRange) bgClass = "bg-clay/25";
+                        else if (isCheckout) {
+                          bgClass = "";
+                          style = { background: CHECKOUT_BG };
+                        } else if (isCheckin) {
+                          bgClass = "";
+                          style = { background: CHECKIN_BG };
+                        } else bgClass = available ? "bg-bone" : "bg-clay/60";
 
                         const title = `${p.name} · ${date} · ${available ? "Available" : "Booked"}${
                           available && price != null ? ` · $${Math.round(price).toLocaleString("en-CA")}/night` : ""
                         }${available && minStay > 1 ? ` · ${minStay}-night min` : ""}`;
 
                         return (
-                          <Link
+                          <button
                             key={date}
-                            href={available ? `/${p.slug}?checkin=${date}` : `/${p.slug}`}
+                            type="button"
+                            onClick={() => handleClick(p.slug, date)}
                             title={title}
                             style={style}
                             className={[
-                              "flex h-14 flex-col items-center justify-center border-l border-edge/50 leading-none transition-[filter]",
+                              "flex h-14 flex-col items-center justify-center border-l border-edge/50 p-0 leading-none transition-[filter]",
                               date === today ? "border-l-2 border-l-clay" : "",
                               bgClass,
-                              available ? "hover:brightness-[0.97]" : "hover:brightness-105",
+                              endpoint ? "" : "hover:brightness-[0.97]",
                             ].join(" ")}
                           >
                             {available && price != null && (
-                              <span className="text-[10px] font-medium tabular-nums text-pine/85">
+                              <span
+                                className={`text-[10px] font-medium tabular-nums ${
+                                  endpoint ? "text-bone" : "text-pine/85"
+                                }`}
+                              >
                                 ${Math.round(price).toLocaleString("en-CA")}
                               </span>
                             )}
                             {available && minStay > 1 && (
-                              <span className="mt-0.5 text-[8px] uppercase tracking-wide text-muted">
+                              <span
+                                className={`mt-0.5 text-[8px] uppercase tracking-wide ${
+                                  endpoint ? "text-bone/80" : "text-muted"
+                                }`}
+                              >
                                 {minStay} nt min
                               </span>
                             )}
-                          </Link>
+                          </button>
                         );
                       })}
                     </div>
@@ -212,10 +268,54 @@ export default function AvailabilityTimeline() {
           )}
         </div>
 
-        <p className="mt-4 text-[13px] text-muted">
-          Live from our booking calendar — nightly rates and minimum stays shown
-          for open dates. Click any open date to start booking that cottage.
-        </p>
+        {/* Selection / Book Now bar */}
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-[13px] text-muted">
+            {hint ? (
+              <span className="text-clay">{hint}</span>
+            ) : complete ? (
+              <>
+                <span className="font-semibold text-pine">{selName}</span> ·{" "}
+                <span className="font-semibold text-pine">
+                  {shortDate(sel!.checkIn)} → {shortDate(sel!.checkOut)}
+                </span>{" "}
+                · {nights} night{nights > 1 ? "s" : ""}
+              </>
+            ) : sel?.checkIn ? (
+              <>
+                <span className="font-semibold text-pine">{selName}</span> — now pick your
+                check-out date.
+              </>
+            ) : (
+              <>
+                Live from our booking calendar. Click a check-in date, then a check-out date,
+                to book direct.
+              </>
+            )}
+          </p>
+          <div className="flex items-center gap-4">
+            {sel?.checkIn && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSel(null);
+                  setHint("");
+                }}
+                className="text-[13px] text-muted underline decoration-edge underline-offset-2 hover:text-clay"
+              >
+                Clear
+              </button>
+            )}
+            {complete && (
+              <Link
+                href={`/${sel!.slug}?checkin=${sel!.checkIn}&checkout=${sel!.checkOut}`}
+                className="inline-flex items-center justify-center rounded-[4px] bg-clay px-6 py-3 text-[14px] font-semibold text-bone transition-colors hover:bg-clay-dark"
+              >
+                Book {selName} &rarr;
+              </Link>
+            )}
+          </div>
+        </div>
       </div>
     </section>
   );

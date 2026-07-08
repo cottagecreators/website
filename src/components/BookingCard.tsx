@@ -27,11 +27,17 @@ export default function BookingCard({ property }: { property: Property }) {
   // Read from the URL on mount (avoids useSearchParams' Suspense requirement and
   // works on the static export too).
   useEffect(() => {
-    const c = new URLSearchParams(window.location.search).get("checkin");
+    const params = new URLSearchParams(window.location.search);
+    const ci = params.get("checkin");
+    const co = params.get("checkout");
+    const iso = /^\d{4}-\d{2}-\d{2}$/;
     // One-time read of the URL after mount (external source) — intentionally
     // sets state here rather than during render to avoid an SSR mismatch.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (c && /^\d{4}-\d{2}-\d{2}$/.test(c)) setCheckIn(c);
+    if (ci && iso.test(ci)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setCheckIn(ci);
+      if (co && iso.test(co) && co > ci) setCheckOut(co);
+    }
   }, []);
 
   const params = new URLSearchParams();

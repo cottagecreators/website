@@ -97,6 +97,44 @@ export function eachDay(start: string, end: string): string[] {
   return out;
 }
 
+/**
+ * A date is selectable as a check-in if it's today-or-later, the night is
+ * available, and it isn't closed for check-in.
+ */
+export function isCheckInEligible(
+  days: Map<string, CalendarDay>,
+  date: string,
+  today: string,
+): boolean {
+  const info = days.get(date);
+  return date >= today && !!info?.available && !info.closedForCheckin;
+}
+
+/**
+ * Validate a full stay against a day map. Returns "" if bookable, else a short
+ * reason. Only the nights actually stayed [start, end) must be available — the
+ * check-out day itself can be booked (turnover day).
+ */
+export function validateStay(
+  days: Map<string, CalendarDay>,
+  start: string,
+  end: string,
+): string {
+  if (end <= start) return "Check-out must be after check-in.";
+  const startInfo = days.get(start);
+  const endInfo = days.get(end);
+  if (!startInfo || startInfo.closedForCheckin) return "Check-in isn't available on that day.";
+  if (endInfo?.closedForCheckout) return "Check-out isn't available on that day.";
+  for (const night of eachDay(start, addDays(end, -1))) {
+    if (!days.get(night)?.available) return "Those dates include unavailable nights.";
+  }
+  const nights = nightsBetween(start, end);
+  if (nights < startInfo.minStay) {
+    return `Minimum stay is ${startInfo.minStay} night${startInfo.minStay > 1 ? "s" : ""}.`;
+  }
+  return "";
+}
+
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
@@ -111,6 +149,12 @@ export function monthLabel(iso: string): string {
 /** Short month name, e.g. "Jul". */
 export function shortMonth(monthIndex0: number): string {
   return MONTHS[monthIndex0].slice(0, 3);
+}
+
+/** "Aug 26" for a YYYY-MM-DD date. */
+export function shortDate(iso: string): string {
+  const d = parseISO(iso);
+  return `${shortMonth(d.getUTCMonth())} ${d.getUTCDate()}`;
 }
 
 /**
