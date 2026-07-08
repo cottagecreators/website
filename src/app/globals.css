@@ -36,6 +36,13 @@
    (text-bone, text-cream, …) still override them — unlayered rules
    would otherwise beat layered utilities in the cascade. */
 @layer base {
+  html {
+    /* Smooth in-page anchor scrolling, offset for the fixed 5rem header so
+       jump targets (e.g. #availability) aren't hidden underneath it. */
+    scroll-behavior: smooth;
+    scroll-padding-top: 5rem;
+  }
+
   body {
     background: var(--color-cream);
     color: var(--color-ink);

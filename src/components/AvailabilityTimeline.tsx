@@ -113,7 +113,7 @@ export default function AvailabilityTimeline() {
   const complete = !!sel?.checkIn && !!sel?.checkOut;
 
   return (
-    <section className="bg-bone py-20 md:py-28">
+    <section id="availability" className="bg-bone py-20 md:py-28">
       <div className="container-edge">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>

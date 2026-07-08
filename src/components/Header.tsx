@@ -97,7 +97,7 @@ export default function Header() {
                   {link.label}
                 </Link>
               ))}
-              <BookDirectButton />
+              <BookDirectButton href="/#availability" />
             </nav>
 
             {/* Mobile toggle */}
@@ -181,7 +181,12 @@ export default function Header() {
             </div>
 
             <div className="mt-8">
-              <BookDirectButton size="lg" block />
+              <BookDirectButton
+                href="/#availability"
+                size="lg"
+                block
+                onClick={() => setMenuOpen(false)}
+              />
             </div>
           </nav>
         </div>
