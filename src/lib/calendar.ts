@@ -28,6 +28,25 @@ export interface AvailabilityResponse {
   days: CalendarDay[];
 }
 
+/** One line of a direct-booking quote (subtotal, a fee, or a tax). */
+export interface QuoteLine {
+  label: string;
+  /** Amount in minor units (cents). */
+  amount: number;
+  /** Pre-formatted display string, e.g. "CA$6,400.00". */
+  formatted: string;
+}
+
+/** Payload returned by GET /api/quote — a live Hospitable direct-booking quote. */
+export interface Quote {
+  /** Hospitable-hosted checkout URL, pre-loaded with these dates/guests. */
+  bookingUrl: string;
+  currency: string;
+  /** Subtotal, then each non-zero fee, then each tax. */
+  lines: QuoteLine[];
+  total: QuoteLine;
+}
+
 /** One property row returned by GET /api/availability. */
 export interface TimelineProperty {
   slug: string;

@@ -8,7 +8,7 @@
  * the browser.
  */
 
-import type { CalendarDay } from "@/lib/calendar";
+import type { CalendarDay, Quote, QuoteLine } from "@/lib/calendar";
 
 const HOSPITABLE_API = "https://public.api.hospitable.com/v2";
 
@@ -81,4 +81,73 @@ export async function fetchCalendar(
   }
   const json = (await res.json()) as { data?: { days?: HospitableDay[] } };
   return (json.data?.days ?? []).map(normalizeDay);
+}
+
+/** Guest breakdown for a quote. `adults` is required (min 1). */
+export interface QuoteGuests {
+  adults: number;
+  children?: number;
+  infants?: number;
+  pets?: number;
+}
+
+interface HospitableAmount {
+  amount: number;
+  formatted: string;
+  label?: string;
+}
+
+function toLine(x: HospitableAmount, fallbackLabel: string): QuoteLine {
+  return { label: x.label ?? fallbackLabel, amount: x.amount, formatted: x.formatted };
+}
+
+/**
+ * Create a live direct-booking quote (POST /v2/properties/{uuid}/quote). Returns
+ * the full price breakdown plus a Hospitable-hosted `booking_url` pre-loaded
+ * with these dates and guests. Throws on missing token / bad response.
+ */
+export async function createQuote(
+  uuid: string,
+  checkin: string,
+  checkout: string,
+  guests: QuoteGuests,
+): Promise<Quote> {
+  const token = process.env.HOSPITABLE_TOKEN;
+  if (!token) throw new Error("HOSPITABLE_TOKEN is not configured");
+
+  const res = await fetch(`${HOSPITABLE_API}/properties/${uuid}/quote`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    cache: "no-store",
+    body: JSON.stringify({ checkin_date: checkin, checkout_date: checkout, guests }),
+  });
+  if (!res.ok) throw new Error(`Hospitable quote request failed: ${res.status}`);
+
+  const { data } = (await res.json()) as {
+    data: {
+      booking_url: string;
+      currency: string;
+      financials: {
+        fees?: HospitableAmount[];
+        taxes?: HospitableAmount[];
+        totals: { sub_total: HospitableAmount; total: HospitableAmount };
+      };
+    };
+  };
+
+  const f = data.financials;
+  const lines: QuoteLine[] = [toLine(f.totals.sub_total, "Subtotal")];
+  for (const fee of f.fees ?? []) if (fee.amount) lines.push(toLine(fee, "Fee"));
+  for (const tax of f.taxes ?? []) if (tax.amount) lines.push(toLine(tax, "Tax"));
+
+  return {
+    bookingUrl: data.booking_url,
+    currency: data.currency,
+    lines,
+    total: toLine(f.totals.total, "Total"),
+  };
 }

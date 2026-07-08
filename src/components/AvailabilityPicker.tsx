@@ -5,6 +5,7 @@ import type { Property } from "@/data/properties";
 import {
   type AvailabilityResponse,
   type CalendarDay,
+  type Quote,
   addDays,
   eachDay,
   isoDate,
@@ -15,6 +16,7 @@ import {
 } from "@/lib/calendar";
 
 type Status = "loading" | "live" | "fallback";
+type QuoteState = "idle" | "loading" | "ready" | "error";
 
 const WEEKDAYS = ["S", "M", "T", "W", "T", "F", "S"];
 const HORIZON_DAYS = 180;
@@ -31,16 +33,23 @@ export default function AvailabilityPicker({
   checkIn,
   checkOut,
   onSelect,
+  onQuote,
 }: {
   property: Property;
   checkIn: string;
   checkOut: string;
   onSelect: (checkIn: string, checkOut: string) => void;
+  /** Lifts the live quote (with its pre-filled checkout URL) up to the card. */
+  onQuote?: (quote: Quote | null) => void;
 }) {
   const [status, setStatus] = useState<Status>("loading");
   const [days, setDays] = useState<Map<string, CalendarDay>>(new Map());
   const [viewMonth, setViewMonth] = useState<string>(todayISO().slice(0, 7));
   const [hint, setHint] = useState<string>("");
+  const [adults, setAdults] = useState(2);
+  const [pets, setPets] = useState(0);
+  const [quote, setQuote] = useState<Quote | null>(null);
+  const [quoteState, setQuoteState] = useState<QuoteState>("idle");
 
   const today = todayISO();
   const horizonEnd = addDays(today, HORIZON_DAYS);
@@ -140,6 +149,49 @@ export default function AvailabilityPicker({
     }
     return sum;
   }, [checkIn, checkOut, days]);
+
+  // Fetch a live Hospitable quote (full price + pre-filled checkout URL) once a
+  // valid stay is selected, refreshing when dates or guest counts change.
+  const validForQuote =
+    !!checkIn && !!checkOut && validateStay(checkIn, checkOut) === "";
+  useEffect(() => {
+    if (!validForQuote) {
+      setQuote(null);
+      setQuoteState("idle");
+      onQuote?.(null);
+      return;
+    }
+    let cancelled = false;
+    setQuoteState("loading");
+    const params = new URLSearchParams({
+      slug: property.slug,
+      checkIn,
+      checkOut,
+      adults: String(adults),
+      pets: String(pets),
+    });
+    fetch(`/api/quote?${params}`)
+      .then((res) => {
+        if (!res.ok) throw new Error(String(res.status));
+        return res.json() as Promise<Quote>;
+      })
+      .then((q) => {
+        if (cancelled) return;
+        setQuote(q);
+        setQuoteState("ready");
+        onQuote?.(q);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setQuote(null);
+        setQuoteState("error");
+        onQuote?.(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [property.slug, checkIn, checkOut, adults, pets, validForQuote]);
 
   // ---- Fallback: plain native date inputs (static export / API unavailable) ----
   if (status === "fallback") {
@@ -261,34 +313,104 @@ export default function AvailabilityPicker({
         })}
       </div>
 
-      <div className="mt-2 flex min-h-[18px] items-center justify-between px-1 text-[11px]">
+      {/* Guests */}
+      <div className="mt-3 flex items-center justify-between border-t border-edge/60 px-1 pt-3 text-[12px]">
+        <span className="text-muted">Guests</span>
+        <Stepper value={adults} min={1} max={property.sleeps} onChange={setAdults} label="guests" />
+      </div>
+      <div className="mt-2 flex items-center justify-between px-1 text-[12px]">
+        <span className="text-muted">Pets</span>
+        <Stepper value={pets} min={0} max={2} onChange={setPets} label="pets" />
+      </div>
+
+      {/* Price / summary */}
+      <div className="mt-3 min-h-[20px] border-t border-edge/60 px-1 pt-3 text-[12px]">
         {hint ? (
-          <span className="text-clay">{hint}</span>
+          <p className="text-clay">{hint}</p>
         ) : checkIn && checkOut ? (
-          <span className="text-muted">
-            {nights} night{nights > 1 ? "s" : ""}
-            {stayTotal != null && (
-              <span className="ml-1 font-semibold text-pine">
-                · {stayTotal.toLocaleString("en-CA", { style: "currency", currency: "CAD", maximumFractionDigits: 0 })}
-              </span>
-            )}
-          </span>
+          quoteState === "ready" && quote ? (
+            <div className="space-y-1">
+              {quote.lines.map((line) => (
+                <div key={line.label} className="flex justify-between text-muted">
+                  <span>{line.label}</span>
+                  <span>{line.formatted}</span>
+                </div>
+              ))}
+              <div className="flex justify-between border-t border-edge/60 pt-1 font-semibold text-pine">
+                <span>Total ({nights} night{nights > 1 ? "s" : ""})</span>
+                <span>{quote.total.formatted}</span>
+              </div>
+            </div>
+          ) : quoteState === "loading" ? (
+            <p className="text-muted">Calculating your total…</p>
+          ) : (
+            <p className="text-muted">
+              {nights} night{nights > 1 ? "s" : ""}
+              {stayTotal != null &&
+                ` · ${stayTotal.toLocaleString("en-CA", { style: "currency", currency: "CAD", maximumFractionDigits: 0 })}`}
+              <span className="text-muted/70"> + taxes &amp; fees</span>
+            </p>
+          )
         ) : (
-          <span className="text-muted">{checkIn ? "Select your check-out date" : "Select your check-in date"}</span>
+          <p className="text-muted">{checkIn ? "Select your check-out date" : "Select your check-in date"}</p>
         )}
-        {(checkIn || checkOut) && (
+      </div>
+
+      {(checkIn || checkOut) && (
+        <div className="mt-2 px-1 text-right">
           <button
             type="button"
             onClick={() => {
               setHint("");
               onSelect("", "");
             }}
-            className="text-muted underline decoration-edge underline-offset-2 hover:text-clay"
+            className="text-[11px] text-muted underline decoration-edge underline-offset-2 hover:text-clay"
           >
-            Clear
+            Clear dates
           </button>
-        )}
-      </div>
+        </div>
+      )}
     </div>
+  );
+}
+
+/** Small −/+ counter used for the guest and pet selectors. */
+function Stepper({
+  value,
+  min,
+  max,
+  onChange,
+  label,
+}: {
+  value: number;
+  min: number;
+  max: number;
+  onChange: (n: number) => void;
+  label: string;
+}) {
+  const btn =
+    "flex h-6 w-6 items-center justify-center rounded-full border border-edge text-ink transition-colors hover:border-clay disabled:opacity-30";
+  return (
+    <span className="flex items-center gap-3">
+      <button
+        type="button"
+        aria-label={`Decrease ${label}`}
+        disabled={value <= min}
+        onClick={() => onChange(Math.max(min, value - 1))}
+        className={btn}
+      >
+        −
+      </button>
+      <span className="w-4 text-center tabular-nums text-ink">{value}</span>
+      <button
+        type="button"
+        aria-label={`Increase ${label}`}
+        disabled={value >= max}
+        onClick={() => onChange(Math.min(max, value + 1))}
+        className={btn}
+      >
+        +
+      </button>
+    </span>
   );
 }

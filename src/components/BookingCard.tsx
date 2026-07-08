@@ -5,23 +5,29 @@ import AvailabilityPicker from "@/components/AvailabilityPicker";
 import BookDirectButton from "@/components/BookDirectButton";
 import TrustLine from "@/components/TrustLine";
 import type { Property } from "@/data/properties";
+import type { Quote } from "@/lib/calendar";
 
 /**
  * Booking card used in the property page's sticky right column. Shows the
  * "from" rate, the direct-booking savings, a live availability calendar (with a
  * plain date-input fallback on the static export), the single primary CTA, a
- * trust line, and a small Airbnb fallback link. The selected dates are appended
- * to the Hospitable URL, which re-validates and takes payment.
+ * trust line, and a small Airbnb fallback link.
+ *
+ * When a live quote is available, "Book Direct" goes straight to that quote's
+ * pre-filled Hospitable checkout URL. Otherwise it falls back to the property's
+ * Hospitable link with the chosen dates as a soft hand-off.
  */
 export default function BookingCard({ property }: { property: Property }) {
   const [checkIn, setCheckIn] = useState("");
   const [checkOut, setCheckOut] = useState("");
+  const [quote, setQuote] = useState<Quote | null>(null);
 
   const params = new URLSearchParams();
   if (checkIn) params.set("startDate", checkIn);
   if (checkOut) params.set("endDate", checkOut);
   const qs = params.toString();
-  const href = qs ? `${property.hospitable}?${qs}` : property.hospitable;
+  const fallbackHref = qs ? `${property.hospitable}?${qs}` : property.hospitable;
+  const href = quote?.bookingUrl ?? fallbackHref;
 
   return (
     <div className="rounded-[8px] border border-edge bg-bone p-6 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
@@ -44,6 +50,7 @@ export default function BookingCard({ property }: { property: Property }) {
           setCheckIn(ci);
           setCheckOut(co);
         }}
+        onQuote={setQuote}
       />
 
       <BookDirectButton href={href} block className="mt-3" />
