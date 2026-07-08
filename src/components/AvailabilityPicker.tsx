@@ -36,6 +36,7 @@ export default function AvailabilityPicker({
   checkOut,
   onSelect,
   onQuote,
+  onPriceRange,
 }: {
   property: Property;
   checkIn: string;
@@ -43,6 +44,8 @@ export default function AvailabilityPicker({
   onSelect: (checkIn: string, checkOut: string) => void;
   /** Lifts the live quote (with its pre-filled checkout URL) up to the card. */
   onQuote?: (quote: Quote | null) => void;
+  /** Lifts the min/max nightly rate across open dates up to the card. */
+  onPriceRange?: (range: { min: number; max: number } | null) => void;
 }) {
   const [status, setStatus] = useState<Status>("loading");
   const [days, setDays] = useState<Map<string, CalendarDay>>(new Map());
@@ -68,6 +71,13 @@ export default function AvailabilityPicker({
         if (cancelled) return;
         setDays(new Map(data.days.map((d) => [d.date, d])));
         setStatus("live");
+        // Report the live nightly-rate range across bookable dates.
+        const prices = data.days
+          .filter((d) => d.available && d.price != null)
+          .map((d) => d.price as number);
+        onPriceRange?.(
+          prices.length ? { min: Math.min(...prices), max: Math.max(...prices) } : null,
+        );
       })
       .catch(() => {
         if (!cancelled) setStatus("fallback");

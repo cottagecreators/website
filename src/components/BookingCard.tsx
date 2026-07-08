@@ -21,6 +21,7 @@ export default function BookingCard({ property }: { property: Property }) {
   const [checkIn, setCheckIn] = useState("");
   const [checkOut, setCheckOut] = useState("");
   const [quote, setQuote] = useState<Quote | null>(null);
+  const [priceRange, setPriceRange] = useState<{ min: number; max: number } | null>(null);
 
   // Prefill the check-in from a ?checkin=YYYY-MM-DD query param, so clicking a
   // date on the homepage availability timeline lands here with it selected.
@@ -49,12 +50,20 @@ export default function BookingCard({ property }: { property: Property }) {
 
   return (
     <div className="rounded-[8px] border border-edge bg-bone p-6 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
-      <div className="flex items-baseline gap-2">
+      <div className="flex items-baseline gap-1.5">
         <span className="text-xs text-muted">From</span>
         <span className="font-display text-[34px] leading-none text-pine" style={{ fontWeight: 500 }}>
-          ${property.priceFrom}
+          ${(priceRange?.min ?? property.priceFrom).toLocaleString("en-CA")}
         </span>
-        <span className="text-[13px] text-muted">/ night</span>
+        {priceRange && priceRange.max > priceRange.min && (
+          <span
+            className="font-display text-[22px] leading-none text-muted"
+            style={{ fontWeight: 500 }}
+          >
+            – ${priceRange.max.toLocaleString("en-CA")}
+          </span>
+        )}
+        <span className="ml-0.5 text-[13px] text-muted">/ night</span>
       </div>
       <p className="mt-1 text-[12px] font-semibold text-[#5FA873]">
         Save ~15% vs Airbnb
@@ -69,6 +78,7 @@ export default function BookingCard({ property }: { property: Property }) {
           setCheckOut(co);
         }}
         onQuote={setQuote}
+        onPriceRange={setPriceRange}
       />
 
       <BookDirectButton href={href} block className="mt-3" />
