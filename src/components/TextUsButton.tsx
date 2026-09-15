@@ -6,7 +6,7 @@ export default function TextUsButton() {
   return (
     <a
       href={`sms:+1${PHONE_NUMBER}&body=Hi! I'm interested in booking a Cottage Creators cottage direct — could you help?`}
-      className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-pine-deep text-bone pl-4 pr-5 py-3.5 rounded-full shadow-lg hover:bg-pine transition-colors hover:scale-105 active:scale-95"
+      className="fixed bottom-[var(--floating-offset)] right-6 z-50 flex items-center gap-2 bg-pine-deep text-bone pl-4 pr-5 py-3.5 rounded-full shadow-lg hover:bg-pine transition-colors hover:scale-105 active:scale-95"
       aria-label="Text us"
     >
       <svg

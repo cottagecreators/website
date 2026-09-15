@@ -30,6 +30,11 @@
 :root {
   --background: var(--color-cream);
   --foreground: var(--color-ink);
+
+  /* Bottom offset for the floating Chat / Text Us pills. Pages that render a
+     fixed bottom bar (the property pages' mobile booking bar) raise this so
+     the pills sit above the bar instead of covering it. */
+  --floating-offset: 1.5rem;
 }
 
 /* Base element defaults live in @layer base so Tailwind utilities

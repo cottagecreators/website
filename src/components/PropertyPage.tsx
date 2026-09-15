@@ -161,6 +161,14 @@ export default function PropertyPage({ property }: { property: Property }) {
       {/* Stay next door */}
       <StayNextDoor current={property} />
 
+      {/* Raise the floating Chat / Text Us pills above the mobile booking bar
+          below. The bar is ~72px tall and only renders under `lg`, so the
+          offset resets to the default at `lg` where the bar disappears. */}
+      <style>{`
+        :root { --floating-offset: 6rem; }
+        @media (min-width: 64rem) { :root { --floating-offset: 1.5rem; } }
+      `}</style>
+
       {/* Mobile sticky booking bar */}
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-edge bg-bone/95 px-4 py-3 backdrop-blur-sm lg:hidden">
         <div className="flex items-center justify-between gap-3">

@@ -72,7 +72,7 @@ export default function ChatWidget() {
         <button
           onClick={() => setOpen(true)}
           aria-label="Open chat assistant"
-          className="fixed bottom-6 left-6 z-50 flex items-center gap-2 bg-pine text-bone pl-4 pr-5 py-3.5 rounded-full shadow-lg hover:bg-pine-deep transition-transform hover:scale-105 active:scale-95"
+          className="fixed bottom-[var(--floating-offset)] left-6 z-50 flex items-center gap-2 bg-pine text-bone pl-4 pr-5 py-3.5 rounded-full shadow-lg hover:bg-pine-deep transition-transform hover:scale-105 active:scale-95"
         >
           <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
             <path d="M12 3C6.5 3 2 6.58 2 11c0 2.18 1.1 4.15 2.9 5.6L4 21l4.7-1.55C9.74 19.8 10.85 20 12 20c5.5 0 10-3.58 10-8s-4.5-9-10-9z" />
@@ -83,7 +83,7 @@ export default function ChatWidget() {
 
       {/* Panel */}
       {open && (
-        <div className="fixed bottom-6 left-6 z-50 flex flex-col w-[min(92vw,22rem)] h-[min(70vh,32rem)] bg-bone rounded-2xl shadow-2xl border border-edge overflow-hidden">
+        <div className="fixed bottom-[var(--floating-offset)] left-6 z-50 flex flex-col w-[min(92vw,22rem)] h-[min(70vh,32rem)] bg-bone rounded-2xl shadow-2xl border border-edge overflow-hidden">
           <div className="flex items-center justify-between bg-pine text-bone px-4 py-3">
             <span className="font-medium text-sm">CottageCreators Assistant</span>
             <button onClick={() => setOpen(false)} aria-label="Close chat" className="text-white/80 hover:text-white">
