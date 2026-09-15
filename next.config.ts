@@ -23,8 +23,14 @@ const isDroplet = process.env.DROPLET === "true";
 const isStaticExport = isGithubPages || isDroplet;
 const repoBasePath = "/website";
 
+// Pin the Turbopack filesystem root to this project. Without it, Next walks up
+// and infers /Users/.../git as the root (there is a stray empty
+// package-lock.json there), and then fails to resolve tailwindcss.
+const turbopack = { root: import.meta.dirname };
+
 const nextConfig: NextConfig = isStaticExport
   ? {
+      turbopack,
       output: "export",
       // trailingSlash emits `route/index.html`, which a plain static file
       // server (GitHub Pages, Caddy file_server) resolves without rewrite rules.
@@ -40,6 +46,7 @@ const nextConfig: NextConfig = isStaticExport
       },
     }
   : {
+      turbopack,
       // Self-contained server bundle for the Docker/DigitalOcean deploy.
       output: "standalone",
       images: {
